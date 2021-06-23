@@ -1,80 +1,43 @@
 package com.company;
 
+import org.jetbrains.annotations.NotNull;
+
 import javax.swing.text.html.Option;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
 
 public class Game {
 
-    char[] stateArray = new char[9];
+    private char[] board = new char[9];
 
-    public void printBoard(char[] stateArray) {
+    public Game () {
+        Arrays.fill(board, ' ');
+    }
+
+    public void printBoard() {
 
         System.out.print ("---------\n");
         for (int i = 0; i < 3; ++i){
             System.out.print("| ");
             for (int j = 0; j < 3; ++j){
-                System.out.print(stateArray[i * 3 + j] + " ");
+                System.out.print(this.board[i * 3 + j] + " ");
             }
             System.out.println("|");
         }
         System.out.print ("---------\n");
     }
 
-    public static Optional<GameResultType> findTheWinner(char[] stateArray) {
-        int[][] winConditionArray = {
-                {0, 1, 2},
-                {3, 4, 5},
-                {6, 7, 8},
-                {0, 3, 6},
-                {1, 4, 7},
-                {2, 5, 8},
-                {0, 4, 8},
-                {2, 4, 6}
-        };
-
-        for (int i = 0; i < 8; i++) {
-            if (stateArray[winConditionArray[i][0]] == stateArray[winConditionArray[i][1]] &&
-                    stateArray[winConditionArray[i][1]] == stateArray[winConditionArray[i][2]] &&
-                    stateArray[winConditionArray[i][0]] != ' ') {
-                if (stateArray[winConditionArray[i][0]] == 'X') {
-                    return Optional.of(GameResultType.X_WON);
-                } else if (stateArray[winConditionArray[i][0]] == 'O') {
-                    return Optional.of(GameResultType.O_WON);
-                }
-            }
-        }
-
-        boolean gameTied = true;
-        for (int i = 0; i < 9; ++i) {
-            if (stateArray[i] == 0) {
-                gameTied = false;
-                break;
-            }
-        }
-
-        if (gameTied) {
-            return Optional.of(GameResultType.DRAW);
-        }
-        return Optional.empty();
-    }
-
-    public static void outputWinner (int winner) {
-        switch (winner) {
-            case -1:
-                System.out.println("Draw!");
-                break;
-            case 1:
-                System.out.println("X wins");
-                break;
-            case 2:
-                System.out.println("O wins");
-                break;
+    public void outputWinner (@NotNull GameResultType result) {
+        switch (result) {
+            case DRAW -> System.out.println("Draw!");
+            case X_WON -> System.out.println("X wins");
+            case O_WON -> System.out.println("O wins");
         }
     }
 
-    public static void userMove(char[] stateArray, char turn) {
+    public void userMove(char turn) {
         Scanner sc = new Scanner(System.in);
         boolean isInputCorrect = false;
         int x = 0;
@@ -105,7 +68,7 @@ public class Game {
             }
 
             // check if the cell is occupied
-            if (stateArray[(x - 1) * 3 + y - 1] != 0) {
+            if (this.board[(x - 1) * 3 + y - 1] != ' ') {
                 System.out.println("This cell is occupied! Choose another one!");
                 continue;
             }
@@ -113,10 +76,10 @@ public class Game {
             isInputCorrect = true;
         }
 
-        stateArray[(x - 1) * 3 + y - 1] = turn;
+        this.board[(x - 1) * 3 + y - 1] = turn;
     }
 
-    public static void randomMove(char[] stateArray, char turn, String mode) {
+    public void randomMove(char turn, String mode) {
         Random randomizer = new Random();
         int position = 0;
         boolean isInputCorrect = false;
@@ -124,7 +87,7 @@ public class Game {
         while (!isInputCorrect) {
             position = randomizer.nextInt(9);
 
-            if (stateArray[position] != 0) {
+            if (this.board[position] != 0) {
                 continue;
             }
 
@@ -132,26 +95,27 @@ public class Game {
         }
 
         System.out.format("Making move level \"%s\"\n", mode);
-        stateArray[position] = turn;
+        this.board[position] = turn;
     }
 
-    public static void hardMove(int[] stateArray, int startingTurn, String mode) {
+    public void hardMove(char startingTurn, String mode) {
         int bestScore = Integer.MIN_VALUE;
         int position = 0;
         for (int i = 0; i < 9; i++) {
-            // Is the spot available?
             int score = 0;
-            int turn = startingTurn;
-            if (stateArray[i] == 0) {
-                stateArray[i] = turn;
-                if (turn == 1) {
-                    turn = 2;
+            char turn = startingTurn;
+            // Is the spot available?
+            if (this.board[i] == ' ') {
+                this.board[i] = turn;
+                // Switch the player
+                if (turn == 'X') {
+                    turn = 'O';
                 } else {
-                    turn = 1;
+                    turn = 'X';
                 }
 
-                score = Minimax.minimax(stateArray, 0, false, turn, startingTurn);
-                stateArray[i] = 0;
+                score = Minimax.minimax(this.board, 0, false, turn, startingTurn);
+                this.board[i] = ' ';
                 if (score > bestScore) {
                     bestScore = score;
                     position = i;
@@ -159,38 +123,35 @@ public class Game {
             }
         }
         System.out.format("Making move level \"%s\"\n", mode);
-        stateArray[position] = startingTurn;
+        this.board[position] = startingTurn;
     }
 
     /*-----------------------------------------------Game process-----------------------------------------------*/
 
-    public static void playUserVSUser() {
-        // create the state array for the game logic
-        int[] stateArray = new int[9];
-        int moves;
+    public void playUserVSUser() {
+        int moves = 1;
         Optional<GameResultType> winner;
-
-        moves = 1;
         winner = Optional.empty();
-        while (moves < 9) {
-            printBoard(stateArray);
+
+        while (moves < 10) {
+            printBoard();
             if (moves % 2 == 1) {
-                userMove(stateArray, 1);
+                userMove('X');
             }
             if (moves % 2 == 0) {
-                userMove(stateArray, 2);
+                userMove('O');
             }
             if (moves >= 5) {
-                winner = findTheWinner(stateArray);
+                winner = Utils.findTheWinner(this.board);
             }
-            if (Optional.isEmpty()) {
-                printBoard(stateArray);
+            if (winner.isPresent()) {
+                printBoard();
                 break;
             }
             moves++;
         }
 
-        outputWinner(winner);
+        outputWinner(winner.get());
     }
 
 //    public static void playUserVSEasy(){
@@ -253,33 +214,28 @@ public class Game {
 //        outputWinner(winner);
 //    }
 //
-//    public static void playUserVSHard(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                userMove(stateArray, 1);
-//            } else {
-//                hardMove(stateArray, 2, "hard");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
+    public void playUserVSHard(){
+        int moves = 1;
+        Optional<GameResultType> winner = Optional.empty();
+        while (moves < 10) {
+            printBoard();
+            if (moves % 2 == 1) {
+                userMove('X');
+            } else {
+                hardMove('O', "hard");
+            }
+            if (moves >= 5) {
+                winner = Utils.findTheWinner(this.board);
+            }
+            if (winner.isPresent()) {
+                printBoard();
+                break;
+            }
+            moves++;
+        }
+
+        outputWinner(winner.get());
+    }
 //
 //    public static void playEasyVSUser(){
 //        // create the state array for the game logic

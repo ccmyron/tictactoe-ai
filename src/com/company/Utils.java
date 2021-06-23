@@ -1,5 +1,6 @@
 package com.company;
 
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Utils {
@@ -12,6 +13,44 @@ public class Utils {
         }
 
         return false;
+    }
+
+    public static Optional<GameResultType> findTheWinner(char[] stateArray) {
+        int[][] winConditionArray = {
+                {0, 1, 2},
+                {3, 4, 5},
+                {6, 7, 8},
+                {0, 3, 6},
+                {1, 4, 7},
+                {2, 5, 8},
+                {0, 4, 8},
+                {2, 4, 6}
+        };
+
+        for (int i = 0; i < 8; i++) {
+            if (stateArray[winConditionArray[i][0]] == stateArray[winConditionArray[i][1]] &&
+                    stateArray[winConditionArray[i][1]] == stateArray[winConditionArray[i][2]] &&
+                    stateArray[winConditionArray[i][0]] != ' ') {
+                if (stateArray[winConditionArray[i][0]] == 'X') {
+                    return Optional.of(GameResultType.X_WON);
+                } else if (stateArray[winConditionArray[i][0]] == 'O') {
+                    return Optional.of(GameResultType.O_WON);
+                }
+            }
+        }
+
+        boolean gameTied = true;
+        for (int i = 0; i < 9; ++i) {
+            if (stateArray[i] == ' ') {
+                gameTied = false;
+                break;
+            }
+        }
+
+        if (gameTied) {
+            return Optional.of(GameResultType.DRAW);
+        }
+        return Optional.empty();
     }
 
     public static int getMenuCommand() {
