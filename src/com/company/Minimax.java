@@ -1,11 +1,13 @@
 package com.company;
 
+import java.util.Optional;
+
 public class Minimax {
 
-    public static int minimax(int[] stateArray, int depth, boolean isMaximizing, int turn, int startingTurn) {
-        int result = Game.findTheWinner(stateArray);
-        if (result != 0) {
-            if (result == 1 && startingTurn == 1 || result == 2 && startingTurn == 2) {
+    public static int minimax(char[] stateArray, int depth, boolean isMaximizing, char turn, char startingTurn) {
+        Optional<GameResultType> result = Game.findTheWinner(stateArray);
+        if (result != GameResultType.DRAW) {
+            if (result == 1 && startingTurn == 'X' || result == 2 && startingTurn == 'O') {
                 return 10;
             }
             if (result == 1 && startingTurn == 2 || result == 2 && startingTurn == 1) {
