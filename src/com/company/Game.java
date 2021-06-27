@@ -1,8 +1,7 @@
 package com.company;
 
-import org.jetbrains.annotations.NotNull;
+//import org.jetbrains.annotations.NotNull;
 
-import javax.swing.text.html.Option;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
@@ -11,17 +10,19 @@ import java.util.Scanner;
 public class Game {
 
     private char[] board = new char[9];
+    char currentTurn;
 
     public Game () {
         Arrays.fill(board, ' ');
+        currentTurn = 'X';
     }
 
     public void printBoard() {
 
         System.out.print ("---------\n");
-        for (int i = 0; i < 3; ++i){
+        for (int i = 0; i < 3; ++i) {
             System.out.print("| ");
-            for (int j = 0; j < 3; ++j){
+            for (int j = 0; j < 3; ++j) {
                 System.out.print(this.board[i * 3 + j] + " ");
             }
             System.out.println("|");
@@ -29,11 +30,40 @@ public class Game {
         System.out.print ("---------\n");
     }
 
-    public void outputWinner (@NotNull GameResultType result) {
+    public void outputWinner (GameResultType result) {
         switch (result) {
             case DRAW -> System.out.println("Draw!");
             case X_WON -> System.out.println("X wins");
             case O_WON -> System.out.println("O wins");
+        }
+    }
+
+    public void play(GameCommand command) {
+        var firstPlayerAction = getActionForPlayer(command.getFirstPlayer());
+        var secondPlayerAction = getActionForPlayer(command.getSecondPlayer());
+
+
+        if (moves % 2 == 1) {
+            firstPlayerAction.run();
+        } else {
+            secondPlayerAction.run();
+        }
+    }
+
+    private Runnable getActionForPlayer(PlayerType playerType) {
+        switch (playerType) {
+            case USER -> {
+                return this::userMove;
+            }
+            case BOT_EASY ->{
+                return this::easyMove;
+            }
+            case BOT_MEDIUM ->{
+                return this::mediumMove;
+            }
+            case BOT_HARD ->{
+                return this::hardMove;
+            }
         }
     }
 
@@ -130,8 +160,7 @@ public class Game {
 
     public void playUserVSUser() {
         int moves = 1;
-        Optional<GameResultType> winner;
-        winner = Optional.empty();
+        Optional<GameResultType> winner = Optional.empty();
 
         while (moves < 10) {
             printBoard();
