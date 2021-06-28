@@ -9,13 +9,29 @@ import java.util.Scanner;
 
 public class Game {
 
-    private char[] board = new char[9];
-    char currentTurn;
+    private final char[] board = new char[9];
+    private char currentTurn;
+    private int moves;
 
-    public Game () {
-        Arrays.fill(board, ' ');
-        currentTurn = 'X';
+
+    /**
+     * Game constructor
+     *
+     * Initializes the game: sets the board to be empty;
+     * Sets the currentTurn to be 'X', as it's the first to pla;
+     * Sets the moves to 0.
+     */
+
+    public Game() {
+        Arrays.fill(this.board, ' ');
+        this.currentTurn = 'X';
+        this.moves = 0;
     }
+
+
+    /**
+     * Outputs the board
+     */
 
     public void printBoard() {
 
@@ -30,7 +46,15 @@ public class Game {
         System.out.print ("---------\n");
     }
 
-    public void outputWinner (GameResultType result) {
+
+    /**
+     * Outputs the winner
+     *
+     * @param result enum value of game result
+     * @see GameResultType
+     */
+
+    public void outputWinner(GameResultType result) {
         switch (result) {
             case DRAW -> System.out.println("Draw!");
             case X_WON -> System.out.println("X wins");
@@ -38,51 +62,116 @@ public class Game {
         }
     }
 
-    public void play(GameCommand command) {
-        var firstPlayerAction = getActionForPlayer(command.getFirstPlayer());
-        var secondPlayerAction = getActionForPlayer(command.getSecondPlayer());
 
+    /**
+     * Switches the player's turn
+     */
 
-        if (moves % 2 == 1) {
-            firstPlayerAction.run();
+    public void switchTurn() {
+        if (this.currentTurn == 'X') {
+            this.currentTurn = 'O';
         } else {
-            secondPlayerAction.run();
+            this.currentTurn = 'X';
         }
     }
 
-    private Runnable getActionForPlayer(PlayerType playerType) {
+
+    /**
+     * Makes a move depending on the type of the player.
+     *
+     * @param playerType enum for declaring type of player.
+     * @see PlayerType
+     * @see Runnable
+     */
+
+    private Runnable getPlayerMove(PlayerType playerType) {
         switch (playerType) {
             case USER -> {
                 return this::userMove;
             }
-            case BOT_EASY ->{
+            case BOT_EASY -> {
                 return this::easyMove;
             }
-            case BOT_MEDIUM ->{
+            case BOT_MEDIUM -> {
                 return this::mediumMove;
             }
-            case BOT_HARD ->{
+            case BOT_HARD -> {
                 return this::hardMove;
             }
         }
+
+        return null;
     }
 
-    public void userMove(char turn) {
+
+    /**
+     * Plays the game from start to finish
+     *
+     * Basic Tic-Tac-Toe flow, 9 moves, 'X' starts, the player is switched on each move.
+     * From the 5th move it is checked for a winner.
+     *
+     * @param command GameCommand instance which defines the game rules
+     * @see GameRule
+     * @see Optional
+     */
+
+    public void play(GameRule command) {
+        var firstPlayerAction = getPlayerMove(command.getFirstPlayer());
+        var secondPlayerAction = getPlayerMove(command.getSecondPlayer());
+
+        Optional<GameResultType> winner = Optional.empty();
+
+        while (this.moves < 9) {
+            printBoard();
+
+            if (this.moves % 2 == 0) {
+                firstPlayerAction.run();
+            } else {
+                secondPlayerAction.run();
+            }
+            switchTurn();
+
+            if (moves >= 5) {
+                winner = Utils.findTheWinner(this.board);
+            }
+
+            if (winner.isPresent()) {
+                printBoard();
+                break;
+            }
+
+            this.moves++;
+        }
+
+        outputWinner(winner.get());
+    }
+
+
+    /**
+     * Makes a move dictated by the user.
+     *
+     * Reads the input in form of 2 digits, both from 1 to 3,
+     * validates it and saves the move.
+     *
+     * @Examples: "1 3", "2 2"
+     */
+
+    private void userMove() {
         Scanner sc = new Scanner(System.in);
         boolean isInputCorrect = false;
         int x = 0;
         int y = 0;
-        String coordinates = "";
 
         while (!isInputCorrect) {
             System.out.print("Enter the coordinates: ");
 
-            // validate the input
-            coordinates = sc.nextLine();
+            // Validate the input
+            String coordinates = sc.nextLine();
             if (coordinates.length() != 3
+                    || coordinates.charAt(1) != ' '
                     || !Character.isDigit(coordinates.charAt(0))
-                    || !Character.isDigit(coordinates.charAt(2)))
-            {
+                    || !Character.isDigit(coordinates.charAt(2))
+            ) {
                 System.out.println("You should enter numbers!");
                 continue;
             }
@@ -91,13 +180,13 @@ public class Game {
             y = coordinates.charAt(2) - '0';
 
 
-            // check if the coordinates are from 1 to 3
+            // Check if the coordinates are from 1 to 3
             if (x < 1 || x >= 4 || y < 1 || y >= 4) {
                 System.out.println("Coordinates should be from 1 to 3!");
                 continue;
             }
 
-            // check if the cell is occupied
+            // Check if the cell is free
             if (this.board[(x - 1) * 3 + y - 1] != ' ') {
                 System.out.println("This cell is occupied! Choose another one!");
                 continue;
@@ -106,538 +195,107 @@ public class Game {
             isInputCorrect = true;
         }
 
-        this.board[(x - 1) * 3 + y - 1] = turn;
+        this.board[(x - 1) * 3 + y - 1] = this.currentTurn;
     }
 
-    public void randomMove(char turn, String mode) {
+
+    /**
+     * Makes a random move.
+     *
+     * Generates a random position until the position is free
+     * in the game grid and then saves the move.
+     */
+
+    private void easyMove() {
         Random randomizer = new Random();
         int position = 0;
-        boolean isInputCorrect = false;
 
-        while (!isInputCorrect) {
+        while (true) {
             position = randomizer.nextInt(9);
 
-            if (this.board[position] != 0) {
-                continue;
+            if (this.board[position] == ' ') {
+                break;
             }
-
-            isInputCorrect = true;
         }
 
-        System.out.format("Making move level \"%s\"\n", mode);
-        this.board[position] = turn;
+        System.out.println("Making move level \"easy\"");
+        this.board[position] = this.currentTurn;
     }
 
-    public void hardMove(char startingTurn, String mode) {
+
+    /**
+     * Makes a move of medium difficulty.
+     *
+     * Medium means that if there's a move that can complete the game,
+     * the AI will make it, otherwise the move will be random.
+     */
+
+    private void mediumMove() {
+
+        Optional<Integer> bestPosition = Utils.findTheWinnerMove(this.board);
+
+        if (bestPosition.isPresent()) {
+            System.out.println("Making move level \"medium\"");
+            this.board[bestPosition.get()] = this.currentTurn;
+        } else {
+            Random randomizer = new Random();
+            int position = 0;
+
+            while (true) {
+                position = randomizer.nextInt(9);
+
+                if (this.board[position] == ' ') {
+                    break;
+                }
+            }
+
+            System.out.println("Making move level \"medium\"");
+            this.board[position] = this.currentTurn;
+        }
+    }
+
+
+    /**
+     * Makes a move of hard difficulty.
+     *
+     * Uses the minimax algorithm to find out the
+     * best possible move for each stage.
+     */
+
+    private void hardMove() {
         int bestScore = Integer.MIN_VALUE;
         int position = 0;
+        char startingTurn = this.currentTurn;
         for (int i = 0; i < 9; i++) {
-            int score = 0;
+            int score;
             char turn = startingTurn;
-            // Is the spot available?
+            /* Is the cell available? */
             if (this.board[i] == ' ') {
-                this.board[i] = turn;
-                // Switch the player
+                /* Fill the cell */
+                this.board[i] = this.currentTurn;
+
+                /* Switch the player to find the minimized score */
                 if (turn == 'X') {
                     turn = 'O';
                 } else {
                     turn = 'X';
                 }
 
+                /* Find the score for this move */
                 score = Minimax.minimax(this.board, 0, false, turn, startingTurn);
+
+                /* Empty the cell */
                 this.board[i] = ' ';
+
+                /* Save the position with the best score */
                 if (score > bestScore) {
                     bestScore = score;
                     position = i;
                 }
             }
         }
-        System.out.format("Making move level \"%s\"\n", mode);
+
+        System.out.println("Making move level \"hard\"");
         this.board[position] = startingTurn;
     }
-
-    /*-----------------------------------------------Game process-----------------------------------------------*/
-
-    public void playUserVSUser() {
-        int moves = 1;
-        Optional<GameResultType> winner = Optional.empty();
-
-        while (moves < 10) {
-            printBoard();
-            if (moves % 2 == 1) {
-                userMove('X');
-            }
-            if (moves % 2 == 0) {
-                userMove('O');
-            }
-            if (moves >= 5) {
-                winner = Utils.findTheWinner(this.board);
-            }
-            if (winner.isPresent()) {
-                printBoard();
-                break;
-            }
-            moves++;
-        }
-
-        outputWinner(winner.get());
-    }
-
-//    public static void playUserVSEasy(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                userMove(stateArray, 1);
-//            }
-//            if (moves % 2 == 0) {
-//                randomMove(stateArray, 2, "easy");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playUserVSMedium(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                userMove(stateArray, 1);
-//            }
-//            if (moves < 4) {
-//                randomMove(stateArray, 2, "medium");
-//            } else {
-//                hardMove(stateArray, 2, "medium");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-    public void playUserVSHard(){
-        int moves = 1;
-        Optional<GameResultType> winner = Optional.empty();
-        while (moves < 10) {
-            printBoard();
-            if (moves % 2 == 1) {
-                userMove('X');
-            } else {
-                hardMove('O', "hard");
-            }
-            if (moves >= 5) {
-                winner = Utils.findTheWinner(this.board);
-            }
-            if (winner.isPresent()) {
-                printBoard();
-                break;
-            }
-            moves++;
-        }
-
-        outputWinner(winner.get());
-    }
-//
-//    public static void playEasyVSUser(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                randomMove(stateArray, 1, "easy");
-//            }
-//            if (moves % 2 == 0) {
-//                userMove(stateArray, 2);
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playEasyVSEasy(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                randomMove(stateArray, 1, "easy");
-//            }
-//            if (moves % 2 == 0) {
-//                randomMove(stateArray, 2, "easy");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playEasyVSMedium(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                randomMove(stateArray, 1, "easy");
-//            }
-//            if (moves % 2 == 0) {
-//                if (moves < 4) {
-//                    randomMove(stateArray, 2, "medium");
-//                } else {
-//                    hardMove(stateArray, 2, "medium");
-//                }
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playEasyVSHard(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                randomMove(stateArray, 1, "easy");
-//            } else {
-//                hardMove(stateArray, 2, "hard");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playMediumVSUser(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                if (moves < 5) {
-//                    randomMove(stateArray, 1, "medium");
-//                } else {
-//                    hardMove(stateArray, 1, "medium");
-//                }
-//            }
-//            if (moves % 2 == 0) {
-//                userMove(stateArray, 2);
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playMediumVSEasy(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                if (moves < 5) {
-//                    randomMove(stateArray, 1, "medium");
-//                } else {
-//                    hardMove(stateArray, 1, "medium");
-//                }
-//            }
-//            if (moves % 2 == 0) {
-//                randomMove(stateArray, 2, "easy");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playMediumVSMedium(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                if (moves < 5) {
-//                    randomMove(stateArray, 1, "medium");
-//                } else {
-//                    hardMove(stateArray, 1, "medium");
-//                }
-//            }
-//            if (moves % 2 == 0) {
-//                if (moves < 4) {
-//                    randomMove(stateArray, 2, "medium");
-//                } else {
-//                    hardMove(stateArray, 2, "medium");
-//                }
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playMediumVSHard(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                if (moves < 5) {
-//                    randomMove(stateArray, 1, "medium");
-//                } else {
-//                    hardMove(stateArray, 1, "medium");
-//                }
-//            }
-//            if (moves % 2 == 0) {
-//                hardMove(stateArray, 2, "hard");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playHardVSUser(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                hardMove(stateArray, 1, "hard");
-//            }
-//            if (moves % 2 == 0) {
-//                userMove(stateArray, 2);
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playHardVSEasy(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                hardMove(stateArray, 1, "hard");
-//            }
-//            if (moves % 2 == 0) {
-//                randomMove(stateArray, 2, "easy");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playHardVSMedium(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                hardMove(stateArray, 1, "hard");
-//            }
-//            if (moves % 2 == 0) {
-//                if (moves < 4) {
-//                    randomMove(stateArray, 2, "medium");
-//                } else {
-//                    hardMove(stateArray, 2, "medium");
-//                }
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
-//
-//    public static void playHardVSHard(){
-//        // create the state array for the game logic
-//        int[] stateArray = new int[9];
-//        int moves;
-//        int winner;
-//
-//        moves = 1;
-//        winner = 0;
-//        while (moves < 10) {
-//            printBoard(stateArray);
-//            if (moves % 2 == 1) {
-//                hardMove(stateArray, 1, "hard");
-//            }
-//            if (moves % 2 == 0) {
-//                hardMove(stateArray, 2, "hard");
-//            }
-//            if (moves >= 5) {
-//                winner = findTheWinner(stateArray);
-//            }
-//            if (winner != 0) {
-//                printBoard(stateArray);
-//                break;
-//            }
-//            moves++;
-//        }
-//
-//        outputWinner(winner);
-//    }
 }

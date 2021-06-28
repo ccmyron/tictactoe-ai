@@ -1,10 +1,21 @@
 package com.company;
 
-public class GameCommand {
+/**
+ * Class that represents the game rules
+ */
+
+public class GameRule {
     private final PlayerType firstPlayer;
     private final PlayerType secondPlayer;
 
-    public GameCommand(PlayerType firstPlayer, PlayerType secondPlayer) {
+    /**
+     * GameRule Constructor
+     *
+     * Instantiates an object with 2 players and sets their type.
+     * @see PlayerType
+     */
+
+    public GameRule(PlayerType firstPlayer, PlayerType secondPlayer) {
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
     }
