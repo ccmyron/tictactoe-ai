@@ -1,6 +1,7 @@
 package com.company;
 
 import java.util.Optional;
+import java.util.function.IntBinaryOperator;
 
 public class Minimax {
 
@@ -35,41 +36,39 @@ public class Minimax {
         }
 
         if (isMaximizing) {
-            int score = 0;
-            int bestScore = Integer.MIN_VALUE;
-            for (int i = 0; i < 9; i++) {
-                // Is the spot available?
-                if (board[i] == ' ') {
-                    board[i] = turn;
-                    if (turn == 'X') {
-                        score = minimax(board, depth + 1, false, 'O', startingTurn);
-                    }
-                    if (turn == 'O') {
-                        score = minimax(board, depth + 1, false, 'X', startingTurn);
-                    }
-                    board[i] = ' ';
-                    bestScore = Math.max(score, bestScore);
-                }
-            }
-            return bestScore;
+            return step(board, depth, isMaximizing, turn, startingTurn, Math::max, Integer.MIN_VALUE);
         } else {
-            int score = 0;
-            int bestScore = Integer.MAX_VALUE;
-            for (int i = 0; i < 9; i++) {
-                // Is the spot available?
-                if (board[i] == ' ') {
-                    board[i] = turn;
-                    if (turn == 'X') {
-                        score = minimax(board, depth + 1, true, 'O', startingTurn);
-                    }
-                    if (turn == 'O') {
-                        score = minimax(board, depth + 1, true, 'X', startingTurn);
-                    }
-                    board[i] = ' ';
-                    bestScore = Math.min(score, bestScore);
-                }
-            }
-            return bestScore;
+            return step(board, depth, isMaximizing, turn, startingTurn, Math::min, Integer.MAX_VALUE);
         }
+    }
+
+    private static int step(
+            char[] board,
+            int depth,
+            boolean isMaximizing,
+            char turn,
+            char startingTurn,
+            IntBinaryOperator operator,
+            int initialBestScore) {
+
+        int score = 0;
+        int bestScore = initialBestScore;
+
+        for (int i = 0; i < 9; i++) {
+            if (board[i] == ' ') {
+                board[i] = turn;
+
+                score = minimax(board, depth + 1, !isMaximizing, switchTurn(turn), startingTurn);
+                bestScore = operator.applyAsInt(score, bestScore);
+
+                board[i] = ' ';
+            }
+        }
+
+        return bestScore;
+    }
+
+    private static char switchTurn(char turn) {
+        return (turn == 'X') ? 'O' : 'X';
     }
 }

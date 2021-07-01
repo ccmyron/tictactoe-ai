@@ -1,9 +1,5 @@
 package com.company;
 
-/**
- * Class that represents the game rules
- */
-
 public class GameRule {
     private final PlayerType firstPlayer;
     private final PlayerType secondPlayer;

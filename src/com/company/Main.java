@@ -5,7 +5,7 @@ public class Main {
         while (true) {
             try {
                 var command = Utils.getGameRule();
-                new Game().play(command);
+                new Game(command).play();
             } catch (GameStopException stopException) {
                 break;
             }
